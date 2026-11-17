@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+<title>하이마트 금액대별 경품 룰렛 v4</title>
+<style>
+  :root{
+    --red:#e11d48;
+    --red2:#f43f5e;
+    --navy:#172554;
+    --gold:#f6c453;
+    --gold2:#f59e0b;
+    --bg:#f8fafc;
+    --text:#1f2937;
+    --muted:#64748b;
+    font-family: system-ui, -apple-system, 'Malgun Gothic', sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    background:
+      radial-gradient(circle at 10% 10%, #fff4d8 0, transparent 16%),
+      radial-gradient(circle at 90% 20%, #ffe0e6 0, transparent 18%),
+      linear-gradient(180deg,#fff8fb 0%, #f8fafc 35%, #f3f6fb 100%);
+    color:var(--text);
+  }
+  .wrap{max-width:580px; margin:0 auto; padding:18px 14px 40px;}
+  .hero{
+    position:relative;
+    overflow:hidden;
+    background:linear-gradient(135deg,#1e2b57 0%, #101a39 100%);
+    color:#fff;
+    border-radius:28px;
+    padding:20px 18px;
+    box-shadow:0 14px 30px rgba(17,24,39,.16);
+  }
+  .hero:before, .hero:after{
+    content:""; position:absolute; border-radius:50%;
+    background:rgba(255,255,255,.07);
+  }
+  .hero:before{width:160px;height:160px;right:-40px;top:-60px}
+  .hero:after{width:120px;height:120px;left:-30px;bottom:-40px}
+  .brand{font-size:12px;font-weight:800;color:#ffb7c4;letter-spacing:.3px}
+  h1{margin:10px 0 8px;font-size:28px;line-height:1.2}
+  .hero p{margin:0;color:#dbe5ff;font-size:13px;line-height:1.6}
+  .sparkles{display:flex;gap:6px;margin:14px 0 0}
+  .sparkles span{font-size:18px}
+
+  .card{
+    background:#fff;
+    border-radius:24px;
+    padding:18px;
+    margin-top:14px;
+    box-shadow:0 8px 24px rgba(15,23,42,.06);
+    border:1px solid #eef2f7;
+  }
+  .section{margin:0 0 12px;font-size:18px;font-weight:900;color:#0f172a}
+  .sub{font-size:12px;color:var(--muted);line-height:1.6;margin:8px 0 0}
+
+  .tierBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .tierBtn{
+    border:1.5px solid #e2e8f0;
+    background:linear-gradient(180deg,#fff 0%, #f8fafc 100%);
+    border-radius:18px;
+    padding:14px 8px;
+    text-align:center;
+    font-weight:900;
+    color:#334155;
+    box-shadow:0 4px 10px rgba(15,23,42,.04);
+  }
+  .tierBtn small{display:block;font-size:11px;font-weight:700;color:#64748b;margin-top:5px}
+  .tierBtn.active{
+    border-color:#fb7185;
+    background:linear-gradient(180deg,#fff1f4 0%, #ffe4ea 100%);
+    color:#be123c;
+    transform:translateY(-1px);
+    box-shadow:0 10px 18px rgba(225,29,72,.15);
+  }
+
+  .selectedBox{
+    margin-top:12px;
+    background:linear-gradient(90deg,#fff7db 0%, #fff1f2 100%);
+    border:1px solid #fde68a;
+    color:#7c2d12;
+    border-radius:16px;
+    padding:12px 13px;
+    font-size:13px;
+    line-height:1.6;
+    font-weight:700;
+  }
+
+  .wheelWrap{display:flex;justify-content:center;padding-top:8px}
+  .wheelShell{
+    position:relative;
+    width:min(100%,380px);
+    aspect-ratio:1;
+  }
+  .pointer{
+    position:absolute;left:50%;top:-4px;transform:translateX(-50%);z-index:6;
+    width:0;height:0;border-left:18px solid transparent;border-right:18px solid transparent;border-top:34px solid #ef4444;
+    filter:drop-shadow(0 3px 2px rgba(0,0,0,.2));
+  }
+  .wheelGlow{
+    position:absolute;inset:4px;border-radius:50%;
+    background:radial-gradient(circle, rgba(255,255,255,0) 54%, rgba(255,255,255,.55) 68%, rgba(255,255,255,0) 73%);
+    pointer-events:none;z-index:2;
+  }
+  canvas{
+    width:100%;height:100%;display:block;border-radius:50%;
+    filter:drop-shadow(0 14px 22px rgba(15,23,42,.16));
+    background:#fff;
+  }
+  .centerBadge{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:88px;height:88px;border-radius:50%;z-index:5;
+    background:radial-gradient(circle at 30% 30%, #fffce8 0%, #ffe9aa 50%, #f5c34b 100%);
+    border:7px solid #fff;
+    box-shadow:0 8px 18px rgba(245,158,11,.28), inset 0 2px 4px rgba(255,255,255,.5);
+    display:flex;align-items:center;justify-content:center;flex-direction:column;
+    text-align:center;
+  }
+  .centerBadge b{font-size:16px; color:#7c2d12; line-height:1}
+  .centerBadge span{font-size:10px;color:#92400e;font-weight:900;margin-top:4px;letter-spacing:.3px}
+
+  .primary{
+    width:100%; border:0; border-radius:16px; padding:17px 16px; margin-top:12px;
+    background:linear-gradient(135deg,var(--red) 0%, var(--red2) 100%);
+    color:#fff; font-size:17px; font-weight:900;
+    box-shadow:0 10px 18px rgba(225,29,72,.22);
+  }
+  .primary:disabled{opacity:.45;box-shadow:none}
+
+  .result{
+    margin-top:14px;padding:16px;border-radius:18px;text-align:center;
+    background:linear-gradient(180deg,#fff8e8 0%, #fff3cd 100%);
+    border:1px solid #fcd34d;
+  }
+  .result .title{font-size:13px;color:#92400e;font-weight:800}
+  .result .prize{font-size:25px;font-weight:900;color:#9a3412;margin:6px 0}
+  .result .disc{font-size:15px;font-weight:800;color:#7c2d12}
+
+  .oddsList{display:grid;gap:9px}
+  .oddsItem{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:11px 12px;border-radius:14px;background:#f8fafc;border:1px solid #e9eef5}
+  .badge{font-weight:900;color:#be123c;background:#fff1f2;padding:6px 10px;border-radius:999px}
+
+  .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .stat{background:#f8fafc;border-radius:16px;padding:14px;border:1px solid #edf2f7}
+  .stat small{display:block;color:#64748b;font-size:12px}
+  .stat strong{display:block;margin-top:6px;font-size:21px}
+  .smallBtn{border:1px solid #d8e0ea;background:#fff;border-radius:12px;padding:10px 12px;font-size:13px;font-weight:800}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .history{max-height:180px;overflow:auto;margin-top:10px;font-size:12px;color:#475569}
+  .history div{padding:9px 0;border-bottom:1px solid #edf2f7;line-height:1.5}
+  .warn{font-size:12px;line-height:1.65;color:#7c2d12;background:#fff7ed;border:1px solid #fed7aa;border-radius:16px;padding:13px;margin-top:14px}
+  .footer{text-align:center;font-size:11px;color:#94a3b8;margin-top:14px}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="hero">
+    <div class="brand">롯데하이마트 · 송파롯데마트점</div>
+    <h1>🎁 금액대별 행운 룰렛</h1>
+    <p>구매금액 버튼만 누르면 바로 참여 가능하게 구성한 모바일 체험판이야.<br>시범용이므로 실제 행사 전 확률·예산·재고를 최종 확인해야 해.</p>
+    <div class="sparkles"><span>✨</span><span>🎉</span><span>🎁</span><span>💝</span></div>
+  </section>
+
+  <section class="card">
+    <h2 class="section">① 구매금액 선택</h2>
+    <div class="tierBtns">
+      <button class="tierBtn" data-tier="100">100만원<small>100만 이상</small></button>
+      <button class="tierBtn" data-tier="200">200만원<small>200만 이상</small></button>
+      <button class="tierBtn" data-tier="300">300만원<small>300만 이상</small></button>
+    </div>
+    <div class="selectedBox" id="selectedInfo">아래 버튼에서 구매금액 구간을 선택해 주세요.</div>
+  </section>
+
+  <section class="card">
+    <h2 class="section">② 행운의 룰렛</h2>
+    <div class="wheelWrap">
+      <div class="wheelShell">
+        <div class="pointer"></div>
+        <canvas id="wheel" width="900" height="900"></canvas>
+        <div class="wheelGlow"></div>
+        <div class="centerBadge"><b>SPIN</b><span>LUCKY EVENT</span></div>
+      </div>
+    </div>
+    <button class="primary" id="spin" disabled>룰렛 돌리기</button>
+    <p class="sub" style="text-align:center">동일한 8칸 · 큰 사은품 글씨 · 기존 당첨 확률 유지</p>
+    <div id="result"></div>
+  </section>
+
+  <section class="card">
+    <h2 class="section">③ 금액대별 경품 확률</h2>
+    <div id="odds" class="oddsList"></div>
+  </section>
+
+  <section class="card">
+    <div class="row">
+      <h2 class="section" style="margin:0">④ 시범 기록</h2>
+      <button class="smallBtn" id="reset">기록 초기화</button>
+    </div>
+    <p class="sub">이 기록은 이 휴대폰에만 저장돼. 정확한 할인액은 실제 판매금액을 기준으로 계산해야 해.</p>
+    <div class="stats">
+      <div class="stat"><small>총 룰렛 횟수</small><strong id="total">0회</strong></div>
+      <div class="stat"><small>할인 경품 당첨 건수</small><strong id="cost">0건</strong></div>
+    </div>
+    <div id="history" class="history"></div>
+  </section>
+
+  <div class="warn">
+    <strong>운영 전 확인</strong><br>
+    이 화면은 제안용 체험판이야. 8개 칸의 크기나 개수가 당첨 확률을 뜻하지는 않아. 추첨 확률은 화면의 경품 확률표 기준이야. 실제 행사 운영 전에는 지사 승인, 할인 상한, 경품 재고, 응모 횟수 제한, 중복 할인 여부를 최종 확정해야 해.
+  </div>
+  <div class="footer">하이마트 스마트 업무 시스템 · 금액대별 경품 룰렛 v4</div>
+</main>
+
+<script>
+const tiers = {
+  100: {label:'100만원 이상', cap:10000, prizes:[['키친타올 3개',90],['1% 즉시할인',10]], slots:['키친타올 3개','1% 즉시할인','키친타올 3개','키친타올 3개','1% 즉시할인','키친타올 3개','키친타올 3개','키친타올 3개']},
+  200: {label:'200만원 이상', cap:30000, prizes:[['키친타올 3개',65],['그릇세트',25],['1% 즉시할인',8],['2% 즉시할인',2]], slots:['키친타올 3개','그릇세트','키친타올 3개','1% 즉시할인','키친타올 3개','그릇세트','키친타올 3개','2% 즉시할인']},
+  300: {label:'300만원 이상', cap:50000, prizes:[['키친타올 3개',45],['그릇세트',30],['냄비세트',15],['1% 즉시할인',6],['2% 즉시할인',3],['3% 즉시할인',1]], slots:['키친타올 3개','그릇세트','냄비세트','1% 즉시할인','키친타올 3개','2% 즉시할인','그릇세트','3% 즉시할인']}
+};
+const $ = id => document.getElementById(id);
+const won = n => Math.round(n).toLocaleString('ko-KR') + '원';
+const palette = [
+  ['#ff6b6b','#e11d48'],
+  ['#ffd166','#f59e0b'],
+  ['#4cc9f0','#2563eb'],
+  ['#72e2ae','#059669'],
+  ['#b794f4','#7c3aed'],
+  ['#ff9f80','#ea580c']
+];
+let currentTier = null;
+let busy = false;
+let rotation = 0;
+let records = [];
+try{records = JSON.parse(localStorage.getItem('himart_roulette_v4') || '[]')}catch(e){records=[]}
+
+function selectTier(t){
+  if(busy)return;
+  currentTier = Number(t);
+  document.querySelectorAll('.tierBtn').forEach(btn=>btn.classList.toggle('active', Number(btn.dataset.tier)===currentTier));
+  const info = tiers[currentTier];
+  $('selectedInfo').innerHTML = `<b>${info.label}</b> 고객 참여 · 즉시할인 최대 <b>${won(info.cap)}</b><br>8칸 고정 · 큰 글씨 · 실제 당첨 확률은 아래 표를 따릅니다.`;
+  $('spin').disabled = false;
+  $('result').innerHTML = '';
+  rotation = 0;
+  $('wheel').style.transition = 'none';
+  $('wheel').style.transform = 'rotate(0deg)';
+  drawWheel();
+  renderOdds();
+}
+document.querySelectorAll('.tierBtn').forEach(btn=>btn.addEventListener('click',()=>selectTier(btn.dataset.tier)));
+
+function drawWheel(){
+  const canvas = $('wheel');
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, c=W/2, outer=420, inner=88;
+  ctx.clearRect(0,0,W,W);
+
+  ctx.beginPath();
+  ctx.arc(c,c,outer+18,0,Math.PI*2);
+  ctx.fillStyle = '#fff7ed';
+  ctx.fill();
+
+  for(let i=0;i<48;i++){
+    const ang = (Math.PI*2/48)*i;
+    const x = c + Math.cos(ang)*(outer+2);
+    const y = c + Math.sin(ang)*(outer+2);
+    ctx.beginPath();
+    ctx.arc(x,y,8,0,Math.PI*2);
+    ctx.fillStyle = i%2 ? '#f59e0b' : '#fde68a';
+    ctx.fill();
+  }
+
+  if(!currentTier){
+    ctx.beginPath(); ctx.arc(c,c,outer,0,Math.PI*2); ctx.fillStyle='#f8fafc'; ctx.fill();
+    ctx.beginPath(); ctx.arc(c,c,outer,0,Math.PI*2); ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=8; ctx.stroke();
+    ctx.fillStyle='#64748b'; ctx.font='bold 34px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('금액대를 선택해 주세요', c, c-6);
+    ctx.font='600 22px sans-serif'; ctx.fillText('100 / 200 / 300만원', c, c+34);
+    return;
+  }
+
+  const items = tiers[currentTier].slots;
+  const equalArc = Math.PI*2/items.length;
+  let start = -Math.PI/2;
+  items.forEach((name,i)=>{
+    const grad = ctx.createLinearGradient(0,0,W,W);
+    grad.addColorStop(0, palette[i % palette.length][0]);
+    grad.addColorStop(1, palette[i % palette.length][1]);
+
+    ctx.beginPath();
+    ctx.moveTo(c,c);
+    ctx.arc(c,c,outer,start,start+equalArc);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=6; ctx.stroke();
+
+    const mid = start + equalArc/2;
+    ctx.save();
+    ctx.translate(c,c);
+    ctx.rotate(mid);
+    ctx.textAlign='center';
+    ctx.fillStyle='#fff';
+    ctx.shadowColor='rgba(0,0,0,.25)'; ctx.shadowBlur=4;
+    ctx.font='900 41px sans-serif';
+    const label = name.replace(' 즉시할인','');
+    let lines;
+    if(label === '키친타올 3개') lines = ['키친타올','3개'];
+    else if(label.length >= 7) lines = [label.slice(0, Math.ceil(label.length/2)), label.slice(Math.ceil(label.length/2))];
+    else if(label.includes('%')) lines = [label,'할인'];
+    else lines = [label];
+    lines.forEach((line, idx) => ctx.fillText(line, outer*0.64, (idx-(lines.length-1)/2)*47));
+    ctx.restore();
+    start += equalArc;
+  });
+
+  ctx.beginPath(); ctx.arc(c,c,inner,0,Math.PI*2); ctx.fillStyle='#ffffff'; ctx.fill();
+  ctx.beginPath(); ctx.arc(c,c,inner,0,Math.PI*2); ctx.strokeStyle='#f8c146'; ctx.lineWidth=10; ctx.stroke();
+}
+
+function renderOdds(){
+  if(!currentTier){ $('odds').innerHTML=''; return; }
+  $('odds').innerHTML = tiers[currentTier].prizes.map(([name,p]) => `
+    <div class="oddsItem">
+      <span>${name}</span><span class="badge">${p}%</span>
+    </div>`).join('') + '<p class="sub"><strong>중요:</strong> 룰렛 8칸은 디자인상 동일한 크기이며, 표시된 칸의 개수와 실제 당첨 확률은 다릅니다. 실제 추첨은 위 확률에 따라 진행됩니다.</p>';
+}
+
+function renderRecords(){
+  const total = records.length;
+  const cost = records.filter(r=>r.prize.includes('%')).length;
+  $('total').textContent = total + '회';
+  $('cost').textContent = cost+'건';
+  $('history').innerHTML = records.length
+    ? records.slice().reverse().slice(0,12).map(r=>`<div>${r.date} · ${r.tier}만원대 · ${r.prize}</div>`).join('')
+    : '<div>아직 저장된 시범 기록이 없습니다.</div>';
+}
+
+function secureRandom(){
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return arr[0] / 4294967296;
+}
+
+$('spin').addEventListener('click', ()=>{
+  if(!currentTier || busy) return;
+  busy = true;
+  $('spin').disabled = true;
+  document.querySelectorAll('.tierBtn').forEach(b=>b.disabled=true);
+  $('result').innerHTML = '';
+
+  const tierSnapshot = currentTier;
+  const {prizes,slots} = tiers[tierSnapshot];
+  const dice = secureRandom()*100;
+  let acc=0, prize=prizes[prizes.length-1][0];
+  for(const [name,p] of prizes){acc+=p;if(dice<acc){prize=name;break;}}
+  const matching = slots.map((v,i)=>v===prize?i:-1).filter(i=>i>=0);
+  const idx=matching[Math.floor(secureRandom()*matching.length)];
+  const slotPct = 100/slots.length;
+  const hitPct = (idx + .20 + .60*secureRandom())*slotPct;
+  const destDeg = (360 - (hitPct * 3.6) % 360) % 360;
+  const currentDeg = ((rotation % 360) + 360) % 360;
+  const diff = (destDeg - currentDeg + 360) % 360;
+  rotation += 360*6 + diff;
+
+  $('wheel').style.transition = 'transform 5.3s cubic-bezier(.12,.8,.08,1)';
+  $('wheel').style.transform = `rotate(${rotation}deg)`;
+
+  setTimeout(()=>{
+    const rec = {date:new Date().toLocaleString('ko-KR'), tier:tierSnapshot, prize};
+    records.push(rec);
+    try{localStorage.setItem('himart_roulette_v4', JSON.stringify(records))}catch(e){}
+
+    $('result').innerHTML = `
+      <div class="result">
+        <div class="title">🎉 축하합니다!</div>
+        <div class="prize">${prize}</div>
+        <div class="disc">${prize.includes('%') ? `실제 구매금액에 할인율 적용 · 최대 ${won(tiers[tierSnapshot].cap)}` : '사은품 제공 대상'}</div>
+        <div class="sub" style="margin-top:8px;text-align:center">기존 당첨 확률을 유지한 시범 결과입니다.</div>
+      </div>`;
+
+    renderRecords();
+    busy = false;
+    document.querySelectorAll('.tierBtn').forEach(b=>b.disabled=false);
+    $('spin').disabled = false;
+  }, 5400);
+});
+
+$('reset').addEventListener('click', ()=>{
+  if(!confirm('이 기기에 저장된 시범 기록을 모두 삭제할까요?')) return;
+  records = [];
+  localStorage.removeItem('himart_roulette_v4');
+  renderRecords();
+  $('result').innerHTML='';
+});
+
+drawWheel();
+renderRecords();
+</script>
+</body>
+</html>
